@@ -20,6 +20,7 @@ namespace NewRallyX
         private Texture2D _font;
         private Texture2D _spriteTex;
         private Texture2D _fuelBarTex;
+        private Texture2D _mapBlocksTex;
 
         private SpriteSheet _smallBlocks;
         private SpriteSheet _largeBlocks;
@@ -27,6 +28,10 @@ namespace NewRallyX
         private SpriteSheet _sprites;
         private ArcadeFont _arcadeFont;
         private SpriteSheet _fuelBar;
+        private SpriteSheet _mapBlocks;
+
+        private Vector2 _offset = new Vector2(0, 0);
+
 
         private Sidebar _sidebar;
 
@@ -67,8 +72,11 @@ namespace NewRallyX
             _fuelBarTex = Content.Load<Texture2D>("fuel-bar");
             _fuelBar = new SpriteSheet(_fuelBarTex, 8, 1);
 
-            _sidebar = new Sidebar(this, _spriteBatch, _sprites, _arcadeFont);
-            Components.Add(_sidebar);
+            _mapBlocksTex = Content.Load<Texture2D>("map-blocks");
+            _mapBlocks = new SpriteSheet(_mapBlocksTex, 21, 96);
+
+            //_sidebar = new Sidebar(this, _spriteBatch, _sprites, _arcadeFont);
+            //Components.Add(_sidebar);
         }
 
         protected override void Update(GameTime gameTime)
@@ -77,6 +85,15 @@ namespace NewRallyX
                 Exit();
 
             // TODO: Add your update logic here
+            KeyboardState key = Keyboard.GetState();
+            if (key.IsKeyDown(Keys.S))
+                _offset += new Vector2(0, -200) * gameTime.ElapsedGameTime.Milliseconds / 1000f;
+            if (key.IsKeyDown(Keys.W))
+                _offset += new Vector2(0, 200) * gameTime.ElapsedGameTime.Milliseconds / 1000f;
+            if (key.IsKeyDown(Keys.A))
+                _offset += new Vector2(200, 0) * gameTime.ElapsedGameTime.Milliseconds / 1000f;
+            if (key.IsKeyDown(Keys.D))
+                _offset += new Vector2(-200, 0) * gameTime.ElapsedGameTime.Milliseconds / 1000f;
 
             base.Update(gameTime);
         }
@@ -84,20 +101,33 @@ namespace NewRallyX
         protected override void Draw(GameTime gameTime)
         {
             // Render to target
-            RenderTarget2D target = new RenderTarget2D(GraphicsDevice, 288, 224);
-            GraphicsDevice.SetRenderTarget(target);
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            using (RenderTarget2D target = new RenderTarget2D(GraphicsDevice, 288, 224))
+            {
+                GraphicsDevice.SetRenderTarget(target);
+                GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
-            _spriteBatch.Begin(SpriteSortMode.BackToFront, samplerState: SamplerState.PointClamp);
-            base.Draw(gameTime);
-            _spriteBatch.End();
+                // TODO: Add your drawing code here
+                _spriteBatch.Begin(SpriteSortMode.BackToFront, samplerState: SamplerState.PointClamp);
+                base.Draw(gameTime);
 
-            // Expand target to full window
-            GraphicsDevice.SetRenderTarget(null);
-            _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
-            _spriteBatch.Draw(target, new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight), Color.White);
-            _spriteBatch.End();
+                for (int y = 0; y < 192; y++)
+                {
+                    for (int x = 0; x < 120; x++)
+                    {
+                        int index = (y * 120) + x;
+                        int spriteID = MapShape.Map123[index];
+                        _mapBlocks.Draw(_spriteBatch, _offset + new Vector2(x * 8, y * 8), spriteID, gameTime, Color.White);
+                    }
+                }
+
+                _spriteBatch.End();
+
+                // Expand target to full window
+                GraphicsDevice.SetRenderTarget(null);
+                _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+                _spriteBatch.Draw(target, new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight), Color.White);
+                _spriteBatch.End();
+            }
         }
     }
 }
